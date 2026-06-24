@@ -1,8 +1,5 @@
 # NX AI Tools — Siemens NX 12.0 自动化建模工具链
 
-> **注意：此项目全部代码由 AI（DeepSeek V4 模型，运行于 Claude Code 内）生成，非人类手写。**
-> 使用者 [@Yuxcv](https://github.com/Yuxcv) 提出需求并测试验证，代码由 AI 完成。
-
 通过 AI（Claude Code / MCP）实时控制 NX 12.0 画图，支持草图→拉伸→布尔操作的完整建模流程。
 
 ## 架构
