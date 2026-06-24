@@ -41,7 +41,8 @@ public class NxHook : NativeWindow
 
     static void Init(){
         if(_inited)return;_inited=true;
-        S=Session.GetSession();try{S.ApplicationSwitchImmediate("UG_APP_MODELING");}catch{}
+        S=Session.GetSession();
+        for(int i=0;i<20;i++){try{S.ApplicationSwitchImmediate("UG_APP_MODELING");break;}catch{System.Threading.Thread.Sleep(3000);}}
         U=UFSession.GetUFSession();W=S.Parts.Work;
         if(W==null){var tpl=@"E:\UGII\templates\model-plain-1-mm-template.prt";
             var cv=@"C:\temp\nx\c"+DateTime.Now.Ticks+".prt";
@@ -64,7 +65,8 @@ public class NxHook : NativeWindow
     protected override void WndProc(ref Message m){
         if(m.Msg==WM_COPYDATA){string r="?";try{
             var c=(CDS)Marshal.PtrToStructure(m.LParam,typeof(CDS));
-            var j=Marshal.PtrToStringAnsi(c.lpData,c.cbData);
+            var buf=new byte[c.cbData];Marshal.Copy(c.lpData,buf,0,c.cbData);
+            var j=System.Text.Encoding.UTF8.GetString(buf);
             var cmd=Ss(j,"cmd");Init();W=S.Parts.Work;
 
             switch(cmd){
@@ -95,7 +97,8 @@ public class NxHook : NativeWindow
                     @"C:\Users\Administrator\Desktop\nx_output.prt",true);r="saved";break;
             }
         }catch(Exception ex){r="ERR:"+ex.Message;}
-        try{File.WriteAllText(@"C:\temp\nx\rslt.json","{\"ok\":true,\"r\":\""+r+"\"}");}catch{}}
+        try{var esc=r.Replace("\\","\\\\").Replace("\"","\\\"").Replace("\n","\\n").Replace("\r","\\r");
+            File.WriteAllText(@"C:\temp\nx\rslt.json","{\"ok\":true,\"r\":\""+esc+"\"}");}catch{}}
         base.WndProc(ref m);
     }
 

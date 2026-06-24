@@ -18,7 +18,7 @@ CMDF = r"C:\temp\nx\command.json"
 RESF = r"C:\temp\nx\result.json"
 STEP = r"C:\Users\Administrator\Desktop\nx_step.py"
 RUN = r"E:\NXBIN\run_journal.exe"
-TIMEOUT = 25  # run_journal.exe 启动要1-2秒 + 执行时间
+TIMEOUT = 30  # journal 进程总超时
 
 @dataclass
 class CommandResult:
@@ -47,14 +47,18 @@ class JournalBackend:
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )
-                await asyncio.wait_for(proc.communicate(), timeout=TIMEOUT)
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=TIMEOUT)
+                if stderr:
+                    err_text = stderr.decode("utf-8", errors="replace").strip()
+                    if err_text:
+                        print(f"[nx journal stderr] {err_text}", flush=True)
             except asyncio.TimeoutError:
                 try: proc.kill()
                 except: pass
                 return CommandResult(ok=False, error="journal 超时")
 
-            # 读结果
-            for _ in range(20):
+            # 读结果（最多等 4 秒）
+            for _ in range(40):
                 if os.path.exists(RESF):
                     try:
                         with open(RESF, "r") as f:
@@ -64,7 +68,7 @@ class JournalBackend:
                         return CommandResult(ok=False, error=r.get("error", "?"))
                     except json.JSONDecodeError:
                         pass
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.1)
             return CommandResult(ok=False, error="无结果文件")
 
     async def system(self, op: str, data: dict) -> CommandResult:
