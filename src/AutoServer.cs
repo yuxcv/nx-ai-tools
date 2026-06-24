@@ -1,3 +1,4 @@
+// 代码由 AI（DeepSeek V4, Claude Code）生成，非人类手写。https://github.com/Yuxcv/nx-ai-tools
 using System;
 using System.Diagnostics;
 using System.IO;

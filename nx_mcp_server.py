@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# 代码由 AI（DeepSeek V4, Claude Code）生成，非人类手写。https://github.com/Yuxcv/nx-ai-tools
 """NX MCP Server v6 — FastMCP + 单次 Journal（不卡 UI，每步可见）"""
 
 from __future__ import annotations
