@@ -99,7 +99,8 @@ public class NxHook : NativeWindow
                 r=Chmf(J(j,"d",2));break;
             case"revolve":
                 r=Revolve(J(j,"x",0),J(j,"y",0),J(j,"w",50),J(j,"h",30),J(j,"a",360));break;
-            // case"mirror": WIP
+            case"unite":
+                r=UniteLast();break;
             case"save":
                 U.Part.Save();File.Copy(W.FullPath,
                     @"C:\Users\Administrator\Desktop\nx_output.prt",true);r="saved";break;
@@ -128,6 +129,12 @@ public class NxHook : NativeWindow
         Tag t;
         U.Modl.CreateChamfer(1,d.ToString(),d.ToString(),"0",edges,out t);
         _prev=_last;_last=t;U.Disp.Refresh();return"ok";
+    }
+
+    static string UniteLast(){
+        if(_last==Tag.Null||_prev==Tag.Null)return"need 2 bodies";
+        U.Modl.UniteBodies(_last,_prev);
+        _prev=Tag.Null;U.Disp.Refresh();return"ok";
     }
 
     static string Revolve(double x,double y,double w,double h,double ang){
