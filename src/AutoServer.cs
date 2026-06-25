@@ -103,7 +103,6 @@ public class NxHook : NativeWindow
         base.WndProc(ref m);
     }
 
-    // ══ 建模 ══
     static void Set(Tag t){_prev=_last;_last=t;}
     static Tag FT(NXOpen.Features.Feature f){Tag t;U.Modl.AskFeatBody(f.Tag,out t);return t;}
 
