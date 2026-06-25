@@ -93,6 +93,13 @@ public class NxHook : NativeWindow
                 r=Cyl(J(j,"d",50),J(j,"h",100),J(j,"x",0),J(j,"y",0),J(j,"z",0));break;
             case"hole":
                 r=Hol(J(j,"x",0),J(j,"y",0),J(j,"r",6),J(j,"d",15));break;
+            case"blend":
+                r=Blend(J(j,"r",5));break;
+            case"chamfer":
+                r=Chmf(J(j,"d",2));break;
+            case"revolve":
+                r=Revolve(J(j,"x",0),J(j,"y",0),J(j,"w",50),J(j,"h",30),J(j,"a",360));break;
+            // case"mirror": WIP
             case"save":
                 U.Part.Save();File.Copy(W.FullPath,
                     @"C:\Users\Administrator\Desktop\nx_output.prt",true);r="saved";break;
@@ -104,7 +111,39 @@ public class NxHook : NativeWindow
     }
 
     static void Set(Tag t){_prev=_last;_last=t;}
-    static Tag FT(NXOpen.Features.Feature f){Tag t;U.Modl.AskFeatBody(f.Tag,out t);return t;}
+
+    static string Blend(double r){
+        if(_last==Tag.Null)return"no body";
+        Tag[] edges;U.Modl.AskBodyEdges(_last,out edges);
+        if(edges.Length==0)return"no edges";
+        Tag t;
+        U.Modl.CreateBlend(r.ToString(),edges,edges.Length,0,0,r,out t);
+        _prev=_last;_last=t;U.Disp.Refresh();return"ok";
+    }
+
+    static string Chmf(double d){
+        if(_last==Tag.Null)return"no body";
+        Tag[] edges;U.Modl.AskBodyEdges(_last,out edges);
+        if(edges.Length==0)return"no edges";
+        Tag t;
+        U.Modl.CreateChamfer(1,d.ToString(),d.ToString(),"0",edges,out t);
+        _prev=_last;_last=t;U.Disp.Refresh();return"ok";
+    }
+
+    static string Revolve(double x,double y,double w,double h,double ang){
+        var sk=W.Sketches.CreateSketchInPlaceBuilder2(null);Sketch sketch;
+        try{sk.PlaneOption=NXOpen.Sketch.PlaneOption.Inferred;
+            sketch=(NXOpen.Sketch)sk.Commit();}finally{sk.Destroy();}
+        sketch.Activate(NXOpen.Sketch.ViewReorient.False);
+        var ts=new Tag[4];double[][]ps={new[]{x,y,0.0},new[]{x+w,y,0.0},new[]{x+w,y+h,0.0},new[]{x,y+h,0.0}};
+        for(int i=0;i<4;i++){var ln=new UFCurve.Line();ln.start_point=ps[i];ln.end_point=ps[(i+1)%4];
+            Tag t;U.Curve.CreateLine(ref ln,out t);ts[i]=t;}
+        sketch.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);
+        Tag[] feats;U.Modl.CreateRevolved(ts,new[]{"0",ang.ToString()},
+            new[]{x,0.0,0.0},new[]{0.0,1.0,0.0},FeatureSigns.Nullsign,out feats);
+        if(feats!=null&&feats.Length>0){Tag bt;U.Modl.AskFeatBody(feats[0],out bt);Set(bt);}
+        U.Disp.Refresh();return"ok";
+    }    static Tag FT(NXOpen.Features.Feature f){Tag t;U.Modl.AskFeatBody(f.Tag,out t);return t;}
 
     static string Blk(double x,double y,double z,double w,double h,double d){
         var b=W.Features.CreateBlockFeatureBuilder(null);
