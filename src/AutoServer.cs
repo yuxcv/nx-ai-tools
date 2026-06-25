@@ -102,6 +102,14 @@ public class NxHook : NativeWindow
             case"trim":r=CmdTrim(J(j,"nx",0),J(j,"ny",0),J(j,"nz",1),J(j,"ox",0),J(j,"oy",0),J(j,"oz",0));break;
             case"mirror":r=CmdMirror(J(j,"nx",0),J(j,"ny",1),J(j,"nz",0),J(j,"ox",0),J(j,"oy",0),J(j,"oz",0));break;
             case"array":r=CmdArray((int)J(j,"n",4),J(j,"dx",50),J(j,"dy",0),J(j,"dz",0));break;
+            // 草图
+            case"skline":r=SkLine(J(j,"x1",0),J(j,"y1",0),J(j,"z1",0),J(j,"x2",50),J(j,"y2",50),J(j,"z2",0));break;
+            case"skarc":r=SkArc(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",20),J(j,"a1",0),J(j,"a2",360));break;
+            case"skrect":r=SkRect(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",30));break;
+            case"skcircle":r=SkCir(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",20));break;
+            case"skpoly":r=SkPoly(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",25),(int)J(j,"n",6));break;
+            case"skenter":r=SkEnter();break;
+            case"skexit":r=SkExit();break;
             case"save":U.Part.Save();File.Copy(W.FullPath,@"C:\Users\Administrator\Desktop\nx_output.prt",true);r="saved";break;
             }
         }catch(Exception ex){r="ERR:"+ex.Message;}
@@ -243,6 +251,49 @@ public class NxHook : NativeWindow
         }
         Refresh();return"ok";
     }
+    // ══ 草图专栏 ══
+    static string SkLine(double x1,double y1,double z1,double x2,double y2,double z2){
+        Sketch sk;SketchAct(out sk);
+        var ln=new UFCurve.Line(){start_point=new double[]{x1,y1,z1},end_point=new double[]{x2,y2,z2}};
+        Tag t;U.Curve.CreateLine(ref ln,out t);
+        SketchDeact(sk);Refresh();return"ok";
+    }
+    static string SkArc(double cx,double cy,double cz,double r,double a1,double a2){
+        Sketch sk;SketchAct(out sk);
+        var a=new UFCurve.Arc(){arc_center=new double[]{cx,cy,cz},radius=r,
+            start_angle=a1*Math.PI/180,end_angle=a2*Math.PI/180,matrix_tag=_mtx};
+        Tag t;U.Curve.CreateArc(ref a,out t);
+        SketchDeact(sk);Refresh();return"ok";
+    }
+    static string SkRect(double x,double y,double z,double w,double h){
+        SketchRect(x,y,z,w,h);Refresh();return"ok";
+    }
+    static string SkCir(double cx,double cy,double cz,double r){
+        SketchCircle(cx,cy,cz,r);Refresh();return"ok";
+    }
+    static string SkPoly(double cx,double cy,double cz,double r,int n){
+        if(n<3)return"n>=3";
+        Sketch sk;SketchAct(out sk);
+        for(int i=0;i<n;i++){
+            double a1=2*Math.PI*i/n,a2=2*Math.PI*(i+1)/n;
+            double x1=cx+r*Math.Cos(a1),y1=cy+r*Math.Sin(a1);
+            double x2=cx+r*Math.Cos(a2),y2=cy+r*Math.Sin(a2);
+            var ln=new UFCurve.Line(){start_point=new double[]{x1,y1,cz},end_point=new double[]{x2,y2,cz}};
+            Tag t;U.Curve.CreateLine(ref ln,out t);
+        }
+        SketchDeact(sk);Refresh();return"ok";
+    }
+    // 仅进入草图环境，留在里面等用户手动操作
+    static Sketch _skSketch;
+    static string SkEnter(){
+        SketchAct(out _skSketch);return"sketch open";
+    }
+    static string SkExit(){
+        if(_skSketch==null)return"no open sketch";
+        _skSketch.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);
+        _skSketch=null;Refresh();return"sketch closed";
+    }
+
     static Tag CylBody(double diam,double h,double x,double y,double z,double dx,double dy,double dz){
         var bb=W.Features.CreateCylinderBuilder(null);
         try{bb.Diameter.RightHandSide=diam.ToString();bb.Height.RightHandSide=h.ToString();bb.Origin=new Point3d(x,y,z);bb.Direction=new Vector3d(dx,dy,dz);return FT(bb.CommitFeature());}finally{bb.Destroy();}
