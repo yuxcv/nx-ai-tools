@@ -96,6 +96,10 @@ public class NxHook : NativeWindow
             case"chamfer":r=Chmf(J(j,"d",2));break;
             case"revolve":r=Revolve(J(j,"x",0),J(j,"y",0),J(j,"w",50),J(j,"h",30),J(j,"a",360));break;
             case"unite":r=UniteLast();break;
+            case"sub":r=SubLast();break;
+            case"pattern":r=Pattern((int)J(j,"n",4),J(j,"dx",50),J(j,"dy",0),J(j,"dz",0));break;
+            case"trim":r=TrimBody(J(j,"nx",0),J(j,"ny",0),J(j,"nz",1),J(j,"ox",0),J(j,"oy",0),J(j,"oz",0));break;
+            case"mirror":r=Mirror(J(j,"nx",0),J(j,"ny",1),J(j,"nz",0),J(j,"ox",0),J(j,"oy",0),J(j,"oz",0));break;
             case"save":U.Part.Save();File.Copy(W.FullPath,@"C:\Users\Administrator\Desktop\nx_output.prt",true);r="saved";break;
             }
         }catch(Exception ex){r="ERR:"+ex.Message;}
@@ -193,7 +197,35 @@ public class NxHook : NativeWindow
         U.Modl.UniteBodies(_last,_prev);
         _prev=Tag.Null;U.Disp.Refresh();return"ok";
     }
-
+    static string SubLast(){
+        if(_last==Tag.Null||_prev==Tag.Null)return"need 2 bodies";
+        Tag e;U.Modl.SubtractBodiesWithRetainedOptions(_prev,_last,false,true,out e);
+        _last=_prev;_prev=Tag.Null;U.Disp.Refresh();return"ok";
+    }
+    static string Pattern(int n,double dx,double dy,double dz){
+        if(_last==Tag.Null)return"no body";
+        for(int i=1;i<n;i++){
+            double x=dx*i,y=dy*i,zz=dz*i;
+            var b=W.Features.CreateBlockFeatureBuilder(null);
+            try{b.SetOriginAndLengths(new Point3d(x,y,zz),"50","50","50");FT(b.CommitFeature());}finally{b.Destroy();}
+        }
+        U.Disp.Refresh();return"ok";
+    }
+    static Tag CreatePlane(double ox,double oy,double oz,double nx,double ny,double nz){
+        Tag p;U.Modl.CreatePlane(new double[]{ox,oy,oz},new double[]{nx,ny,nz},out p);return p;
+    }
+    static string TrimBody(double nx,double ny,double nz,double ox,double oy,double oz){
+        if(_last==Tag.Null)return"no body";
+        var plane=CreatePlane(ox,oy,oz,nx,ny,nz);
+        Tag t;U.Modl.TrimBody(_last,plane,0,out t);
+        _prev=_last;_last=t;U.Disp.Refresh();return"ok";
+    }
+    static string Mirror(double nx,double ny,double nz,double ox,double oy,double oz){
+        if(_last==Tag.Null)return"no body";
+        var plane=CreatePlane(ox,oy,oz,nx,ny,nz);
+        Tag t;U.Modl.CreateMirrorBody(_last,plane,out t);
+        _prev=_last;_last=t;U.Disp.Refresh();return"ok";
+    }
     static Tag MakeCylinder(double diam,double h,double x,double y,double z,double dx,double dy,double dz){
         var bb=W.Features.CreateCylinderBuilder(null);
         try{bb.Diameter.RightHandSide=diam.ToString();bb.Height.RightHandSide=h.ToString();bb.Origin=new Point3d(x,y,z);bb.Direction=new Vector3d(dx,dy,dz);return FT(bb.CommitFeature());}finally{bb.Destroy();}
