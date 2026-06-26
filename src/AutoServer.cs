@@ -82,7 +82,7 @@ public class NxHook : NativeWindow
 
             switch(cmd){
             case"ping":r="pong";break;
-            case"clear":NewCanvas();EnsPart();r="ok";break;
+            case"clear":SkDeact();NewCanvas();EnsPart();r="ok";break;
             case"block":r=CmdBlk(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",100),J(j,"h",50),J(j,"d",30));break;
             case"extrude":r=CmdExt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",50),J(j,"d",20),(int)J(j,"sign",0));break;
             case"exsketch":r=ExSketch(J(j,"d",20),(int)J(j,"sign",0));break;
@@ -165,7 +165,7 @@ public class NxHook : NativeWindow
     // ══ 建模命令 ══
     static void NewCanvas(){
         var p=TMP+DateTime.Now.Ticks+".prt";File.Copy(TPL,p);
-        PartLoadStatus st;S.Parts.OpenBaseDisplay(p,out st);W=S.Parts.Work;_last=Tag.Null;_prev=Tag.Null;
+        PartLoadStatus st;S.Parts.OpenBaseDisplay(p,out st);W=S.Parts.Work;_last=Tag.Null;_prev=Tag.Null;_skCurves=null;
     }
     static string CmdBlk(double x,double y,double z,double w,double h,double d){
         var b=W.Features.CreateBlockFeatureBuilder(null);
