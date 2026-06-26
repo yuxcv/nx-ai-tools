@@ -108,8 +108,6 @@ public class NxHook : NativeWindow
             case"skrect":r=SkRect(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",30));break;
             case"skcircle":r=SkCir(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",20));break;
             case"skpoly":r=SkPoly(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",25),(int)J(j,"n",6));break;
-            case"skenter":r=SkEnter();break;
-            case"skexit":r=SkExit();break;
             case"save":U.Part.Save();File.Copy(W.FullPath,@"C:\Users\Administrator\Desktop\nx_output.prt",true);r="saved";break;
             }
         }catch(Exception ex){r="ERR:"+ex.Message;}
@@ -125,7 +123,6 @@ public class NxHook : NativeWindow
     }
     static void Refresh(){U.Disp.Refresh();}
 
-    // 草图
     static void SketchAct(out Sketch sk){
         var sb=W.Sketches.CreateSketchInPlaceBuilder2(null);
         try{sb.PlaneOption=NXOpen.Sketch.PlaneOption.Inferred;sk=(NXOpen.Sketch)sb.Commit();}finally{sb.Destroy();}
@@ -134,6 +131,7 @@ public class NxHook : NativeWindow
     static void SketchDeact(Sketch sk){
         sk.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);
     }
+
     static Tag[] SketchRect(double x,double y,double z,double w,double h){
         Sketch sk;SketchAct(out sk);
         var ts=new Tag[4];double[][]ps={new[]{x,y,z},new[]{x+w,y,z},new[]{x+w,y+h,z},new[]{x,y+h,z}};
@@ -251,6 +249,7 @@ public class NxHook : NativeWindow
         }
         Refresh();return"ok";
     }
+
     // ══ 草图专栏 ══
     static string SkLine(double x1,double y1,double z1,double x2,double y2,double z2){
         Sketch sk;SketchAct(out sk);
@@ -282,16 +281,6 @@ public class NxHook : NativeWindow
             Tag t;U.Curve.CreateLine(ref ln,out t);
         }
         SketchDeact(sk);Refresh();return"ok";
-    }
-    // 仅进入草图环境，留在里面等用户手动操作
-    static Sketch _skSketch;
-    static string SkEnter(){
-        SketchAct(out _skSketch);return"sketch open";
-    }
-    static string SkExit(){
-        if(_skSketch==null)return"no open sketch";
-        _skSketch.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);
-        _skSketch=null;Refresh();return"sketch closed";
     }
 
     static Tag CylBody(double diam,double h,double x,double y,double z,double dx,double dy,double dz){
