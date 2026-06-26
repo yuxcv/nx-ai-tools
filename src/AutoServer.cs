@@ -219,7 +219,7 @@ public class NxHook : NativeWindow
     }
 
     // ══ 草图（开放模式，不自动关闭） ══
-    static Sketch _skOpen;static NXObject _skGeom;
+    static Sketch _skOpen;static DisplayableObject _skGeom;
     static void SkEnsure(){
         if(_skOpen!=null)return;
         var sb=W.Sketches.CreateSketchInPlaceBuilder2(null);
@@ -231,7 +231,7 @@ public class NxHook : NativeWindow
         _skOpen.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);
         _skOpen=null;Refresh();
     }
-    static void SkAdd(NXObject g){_skOpen.AddGeometry(g,Sketch.InferConstraintsOption.InferNoConstraints);_skGeom=g;}
+    static void SkAdd(DisplayableObject g){_skOpen.AddGeometry(g,Sketch.InferConstraintsOption.InferNoConstraints);_skGeom=g;}
 
     // 草图绘制
     static string SkLine(double x1,double y1,double z1,double x2,double y2,double z2){
@@ -240,19 +240,19 @@ public class NxHook : NativeWindow
     static string SkArc(double cx,double cy,double cz,double r,double a1,double a2){
         SkEnsure();var a=new UFCurve.Arc(){arc_center=new double[]{cx,cy,cz},radius=r,
             start_angle=a1*Math.PI/180,end_angle=a2*Math.PI/180,matrix_tag=_mtx};
-        Tag t;U.Curve.CreateArc(ref a,out t);SkAdd(NXOpen.Utilities.NXObjectManager.Get(t));Refresh();return"ok";
+        Tag t;U.Curve.CreateArc(ref a,out t);SkAdd((DisplayableObject)NXOpen.Utilities.NXObjectManager.Get(t));Refresh();return"ok";
     }
     static string SkRect(double x,double y,double z,double w,double h){
-        SkEnsure();double[][]ps={new[]{x,y,z},new[]{x+w,y,z},new[]{x+w,y+h,z},new[]{x,y+h,z}};NXObject last=null;
+        SkEnsure();double[][]ps={new[]{x,y,z},new[]{x+w,y,z},new[]{x+w,y+h,z},new[]{x,y+h,z}};Line last=null;
         for(int i=0;i<4;i++){last=W.Curves.CreateLine(new Point3d(ps[i][0],ps[i][1],ps[i][2]),new Point3d(ps[(i+1)%4][0],ps[(i+1)%4][1],ps[(i+1)%4][2]));_skOpen.AddGeometry(last,Sketch.InferConstraintsOption.InferNoConstraints);}
         _skGeom=last;Refresh();return"ok";
     }
     static string SkCir(double cx,double cy,double cz,double r){
         SkEnsure();var a=new UFCurve.Arc(){arc_center=new double[]{cx,cy,cz},radius=r,start_angle=0,end_angle=2*Math.PI,matrix_tag=_mtx};
-        Tag t;U.Curve.CreateArc(ref a,out t);SkAdd(NXOpen.Utilities.NXObjectManager.Get(t));Refresh();return"ok";
+        Tag t;U.Curve.CreateArc(ref a,out t);SkAdd((DisplayableObject)NXOpen.Utilities.NXObjectManager.Get(t));Refresh();return"ok";
     }
     static string SkPoly(double cx,double cy,double cz,double r,int n){
-        if(n<3)return"n>=3";SkEnsure();NXObject last=null;
+        if(n<3)return"n>=3";SkEnsure();Line last=null;
         for(int i=0;i<n;i++){double a1=2*Math.PI*i/n,a2=2*Math.PI*(i+1)/n;
             last=W.Curves.CreateLine(new Point3d(cx+r*Math.Cos(a1),cy+r*Math.Sin(a1),cz),new Point3d(cx+r*Math.Cos(a2),cy+r*Math.Sin(a2),cz));
             _skOpen.AddGeometry(last,Sketch.InferConstraintsOption.InferNoConstraints);
