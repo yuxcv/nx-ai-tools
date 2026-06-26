@@ -53,10 +53,7 @@ public class NxHook : NativeWindow
         var p="\""+k+"\":\"";int i=j.IndexOf(p);if(i<0)return"";i+=p.Length;
         int e=j.IndexOf('"',i);return e<0?"":j.Substring(i,e-i);
     }
-    static string Ok(string r,object v){
-        var s=r.Replace("\\","\\\\").Replace("\"","\\\"");
-        return"{\"ok\":true,\"r\":\""+s+"\"}";
-    }
+    static string Ok(string r){var s=r.Replace("\\","\\\\").Replace("\"","\\\"");return"{\"ok\":true,\"r\":\""+s+"\"}";}
 
     // ══ 生命周期 ══
     static void Init(){
@@ -68,11 +65,9 @@ public class NxHook : NativeWindow
     static void EnsPart(){
         if(S.Parts.Work==null){
             var p=TMP+DateTime.Now.Ticks+".prt";
-            File.Copy(TPL,p);PartLoadStatus st;S.Parts.OpenBaseDisplay(p,out st);
-            _last=Tag.Null;_prev=Tag.Null;
+            File.Copy(TPL,p);PartLoadStatus st;S.Parts.OpenBaseDisplay(p,out st);_last=Tag.Null;_prev=Tag.Null;
         }
-        W=S.Parts.Work;
-        Tag w;U.Csys.AskWcs(out w);U.Csys.AskMatrixOfObject(w,out _mtx);
+        W=S.Parts.Work;Tag w;U.Csys.AskWcs(out w);U.Csys.AskMatrixOfObject(w,out _mtx);
     }
 
     // ══ WM_COPYDATA ══
@@ -102,7 +97,6 @@ public class NxHook : NativeWindow
             case"trim":r=CmdTrim(J(j,"nx",0),J(j,"ny",0),J(j,"nz",1),J(j,"ox",0),J(j,"oy",0),J(j,"oz",0));break;
             case"mirror":r=CmdMirror(J(j,"nx",0),J(j,"ny",1),J(j,"nz",0),J(j,"ox",0),J(j,"oy",0),J(j,"oz",0));break;
             case"array":r=CmdArray((int)J(j,"n",4),J(j,"dx",50),J(j,"dy",0),J(j,"dz",0));break;
-            // 草图
             case"skline":r=SkLine(J(j,"x1",0),J(j,"y1",0),J(j,"z1",0),J(j,"x2",50),J(j,"y2",50),J(j,"z2",0));break;
             case"skarc":r=SkArc(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",20),J(j,"a1",0),J(j,"a2",360));break;
             case"skrect":r=SkRect(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",30));break;
@@ -111,7 +105,7 @@ public class NxHook : NativeWindow
             case"save":U.Part.Save();File.Copy(W.FullPath,@"C:\Users\Administrator\Desktop\nx_output.prt",true);r="saved";break;
             }
         }catch(Exception ex){r="ERR:"+ex.Message;}
-        try{File.WriteAllText(@"C:\temp\nx\rslt.json",Ok(r,null));}catch{}
+        try{File.WriteAllText(@"C:\temp\nx\rslt.json",Ok(r));}catch{}
         base.WndProc(ref m);
     }
 
@@ -122,16 +116,12 @@ public class NxHook : NativeWindow
         Tag p;U.Modl.CreatePlane(new double[]{ox,oy,oz},new double[]{nx,ny,nz},out p);return p;
     }
     static void Refresh(){U.Disp.Refresh();}
-
     static void SketchAct(out Sketch sk){
         var sb=W.Sketches.CreateSketchInPlaceBuilder2(null);
         try{sb.PlaneOption=NXOpen.Sketch.PlaneOption.Inferred;sk=(NXOpen.Sketch)sb.Commit();}finally{sb.Destroy();}
         sk.Activate(NXOpen.Sketch.ViewReorient.False);
     }
-    static void SketchDeact(Sketch sk){
-        sk.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);
-    }
-
+    static void SketchDeact(Sketch sk){sk.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);}
     static Tag[] SketchRect(double x,double y,double z,double w,double h){
         Sketch sk;SketchAct(out sk);
         var ts=new Tag[4];double[][]ps={new[]{x,y,z},new[]{x+w,y,z},new[]{x+w,y+h,z},new[]{x,y+h,z}};
@@ -141,23 +131,18 @@ public class NxHook : NativeWindow
     static Tag SketchCircle(double x,double y,double z,double r){
         Sketch sk;SketchAct(out sk);
         var a=new UFCurve.Arc(){arc_center=new double[]{x,y,z},radius=r,start_angle=0,end_angle=2*Math.PI,matrix_tag=_mtx};
-        Tag t;U.Curve.CreateArc(ref a,out t);
-        SketchDeact(sk);return t;
+        Tag t;U.Curve.CreateArc(ref a,out t);SketchDeact(sk);return t;
     }
     static Tag ExtrudeCrv(Tag[] curves,double dist,double px,double py,double pz,double dx,double dy,double dz,FeatureSigns sign){
         Tag[] feats;U.Modl.CreateExtruded(curves,"0",new[]{"0",dist.ToString()},new[]{px,py,pz},new[]{dx,dy,dz},sign,out feats);
-        if(feats!=null&&feats.Length>0){Tag bt;U.Modl.AskFeatBody(feats[0],out bt);return bt;}
-        return Tag.Null;
+        if(feats!=null&&feats.Length>0){Tag bt;U.Modl.AskFeatBody(feats[0],out bt);return bt;}return Tag.Null;
     }
 
-    // ══ 命令 ══
+    // ══ 建模命令 ══
     static void NewCanvas(){
-        var p=TMP+DateTime.Now.Ticks+".prt";
-        File.Copy(TPL,p);PartLoadStatus st;S.Parts.OpenBaseDisplay(p,out st);
-        W=S.Parts.Work;_last=Tag.Null;_prev=Tag.Null;
+        var p=TMP+DateTime.Now.Ticks+".prt";File.Copy(TPL,p);
+        PartLoadStatus st;S.Parts.OpenBaseDisplay(p,out st);W=S.Parts.Work;_last=Tag.Null;_prev=Tag.Null;
     }
-
-    // 基础体
     static string CmdBlk(double x,double y,double z,double w,double h,double d){
         var b=W.Features.CreateBlockFeatureBuilder(null);
         try{b.SetOriginAndLengths(new Point3d(x,y,z),w.ToString(),h.ToString(),d.ToString());Track(FT(b.CommitFeature()));}finally{b.Destroy();}
@@ -173,19 +158,14 @@ public class NxHook : NativeWindow
         try{b.CenterPoint=W.Points.CreatePoint(new Point3d(x,y,z));b.Diameter.RightHandSide=diam.ToString();Track(FT(b.CommitFeature()));}finally{b.Destroy();}
         Refresh();return"ok";
     }
-
-    // 草图拉伸
     static string CmdExt(double x,double y,double z,double w,double h,double d,int sign){
         U.Ui.DisplayMessage("extrude: "+w+"x"+h+"x"+d,1);
         var ts=SketchRect(x,y,z,w,h);
         var sg=sign==1?FeatureSigns.Positive:sign==2?FeatureSigns.Negative:FeatureSigns.Nullsign;
-        Track(ExtrudeCrv(ts,d,x+w/2,y+h/2,z,0,0,1,sg));
-        Refresh();return"ok";
+        Track(ExtrudeCrv(ts,d,x+w/2,y+h/2,z,0,0,1,sg));Refresh();return"ok";
     }
     static string CmdPkt(double x,double y,double z,double r,double d){
-        var t=SketchCircle(x,y,z,r);
-        ExtrudeCrv(new[]{t},d,x,y,z,0,0,1,FeatureSigns.Negative);
-        Refresh();return"ok";
+        ExtrudeCrv(new[]{SketchCircle(x,y,z,r)},d,x,y,z,0,0,1,FeatureSigns.Negative);Refresh();return"ok";
     }
     static string CmdHol(double x,double y,double r,double d){
         SketchCircle(x,y,5,r);
@@ -196,27 +176,18 @@ public class NxHook : NativeWindow
     static string CmdRevolve(double x,double y,double w,double h,double ang){
         var ts=SketchRect(x,y,0,w,h);
         Tag[] feats;U.Modl.CreateRevolved(ts,new[]{"0",ang.ToString()},new[]{x,0.0,0.0},new[]{0.0,1.0,0.0},FeatureSigns.Nullsign,out feats);
-        if(feats!=null&&feats.Length>0){Tag bt;U.Modl.AskFeatBody(feats[0],out bt);Track(bt);}
-        Refresh();return"ok";
+        if(feats!=null&&feats.Length>0){Tag bt;U.Modl.AskFeatBody(feats[0],out bt);Track(bt);}Refresh();return"ok";
     }
-
-    // 边操作
     static string CmdBlend(double r){
         if(_last==Tag.Null)return"no body";
-        Tag[] es;U.Modl.AskBodyEdges(_last,out es);
-        if(es.Length==0)return"no edges";
-        Tag t;U.Modl.CreateBlend(r.ToString(),es,es.Length,0,0,r,out t);
-        Track(t);Refresh();return"ok";
+        Tag[] es;U.Modl.AskBodyEdges(_last,out es);if(es.Length==0)return"no edges";
+        Tag t;U.Modl.CreateBlend(r.ToString(),es,es.Length,0,0,r,out t);Track(t);Refresh();return"ok";
     }
     static string CmdChmf(double d){
         if(_last==Tag.Null)return"no body";
-        Tag[] es;U.Modl.AskBodyEdges(_last,out es);
-        if(es.Length==0)return"no edges";
-        Tag t;U.Modl.CreateChamfer(1,d.ToString(),d.ToString(),"0",es,out t);
-        Track(t);Refresh();return"ok";
+        Tag[] es;U.Modl.AskBodyEdges(_last,out es);if(es.Length==0)return"no edges";
+        Tag t;U.Modl.CreateChamfer(1,d.ToString(),d.ToString(),"0",es,out t);Track(t);Refresh();return"ok";
     }
-
-    // 布尔
     static string CmdUnite(){
         if(_last==Tag.Null||_prev==Tag.Null)return"need 2 bodies";
         U.Modl.UniteBodies(_last,_prev);_prev=Tag.Null;Refresh();return"ok";
@@ -226,43 +197,33 @@ public class NxHook : NativeWindow
         Tag e;U.Modl.SubtractBodiesWithRetainedOptions(_prev,_last,false,true,out e);
         _last=_prev;_prev=Tag.Null;Refresh();return"ok";
     }
-
-    // 面操作
     static string CmdTrim(double nx,double ny,double nz,double ox,double oy,double oz){
         if(_last==Tag.Null)return"no body";
-        Tag t;U.Modl.TrimBody(_last,Plan(ox,oy,oz,nx,ny,nz),0,out t);
-        Track(t);Refresh();return"ok";
+        Tag t;U.Modl.TrimBody(_last,Plan(ox,oy,oz,nx,ny,nz),0,out t);Track(t);Refresh();return"ok";
     }
     static string CmdMirror(double nx,double ny,double nz,double ox,double oy,double oz){
         if(_last==Tag.Null)return"no body";
-        Tag t;U.Modl.CreateMirrorBody(_last,Plan(ox,oy,oz,nx,ny,nz),out t);
-        Track(t);Refresh();return"ok";
+        Tag t;U.Modl.CreateMirrorBody(_last,Plan(ox,oy,oz,nx,ny,nz),out t);Track(t);Refresh();return"ok";
     }
-
-    // 阵列
     static string CmdArray(int n,double dx,double dy,double dz){
-        if(_last==Tag.Null)return"no body";
-        if(n<2)return"n>=2";
+        if(_last==Tag.Null)return"no body";if(n<2)return"n>=2";
         for(int i=1;i<n;i++){
             var b=W.Features.CreateBlockFeatureBuilder(null);
             try{b.SetOriginAndLengths(new Point3d(dx*i,dy*i,dz*i),"50","50","50");FT(b.CommitFeature());}finally{b.Destroy();}
-        }
-        Refresh();return"ok";
+        }Refresh();return"ok";
     }
 
-    // ══ 草图专栏 ══
+    // ══ 草图绘制 ══
     static string SkLine(double x1,double y1,double z1,double x2,double y2,double z2){
         Sketch sk;SketchAct(out sk);
         var ln=new UFCurve.Line(){start_point=new double[]{x1,y1,z1},end_point=new double[]{x2,y2,z2}};
-        Tag t;U.Curve.CreateLine(ref ln,out t);
-        SketchDeact(sk);Refresh();return"ok";
+        Tag t;U.Curve.CreateLine(ref ln,out t);SketchDeact(sk);Refresh();return"ok";
     }
     static string SkArc(double cx,double cy,double cz,double r,double a1,double a2){
         Sketch sk;SketchAct(out sk);
         var a=new UFCurve.Arc(){arc_center=new double[]{cx,cy,cz},radius=r,
             start_angle=a1*Math.PI/180,end_angle=a2*Math.PI/180,matrix_tag=_mtx};
-        Tag t;U.Curve.CreateArc(ref a,out t);
-        SketchDeact(sk);Refresh();return"ok";
+        Tag t;U.Curve.CreateArc(ref a,out t);SketchDeact(sk);Refresh();return"ok";
     }
     static string SkRect(double x,double y,double z,double w,double h){
         SketchRect(x,y,z,w,h);Refresh();return"ok";
@@ -271,18 +232,12 @@ public class NxHook : NativeWindow
         SketchCircle(cx,cy,cz,r);Refresh();return"ok";
     }
     static string SkPoly(double cx,double cy,double cz,double r,int n){
-        if(n<3)return"n>=3";
-        Sketch sk;SketchAct(out sk);
-        for(int i=0;i<n;i++){
-            double a1=2*Math.PI*i/n,a2=2*Math.PI*(i+1)/n;
-            double x1=cx+r*Math.Cos(a1),y1=cy+r*Math.Sin(a1);
-            double x2=cx+r*Math.Cos(a2),y2=cy+r*Math.Sin(a2);
-            var ln=new UFCurve.Line(){start_point=new double[]{x1,y1,cz},end_point=new double[]{x2,y2,cz}};
+        if(n<3)return"n>=3";Sketch sk;SketchAct(out sk);
+        for(int i=0;i<n;i++){double a1=2*Math.PI*i/n,a2=2*Math.PI*(i+1)/n;
+            var ln=new UFCurve.Line(){start_point=new double[]{cx+r*Math.Cos(a1),cy+r*Math.Sin(a1),cz},end_point=new double[]{cx+r*Math.Cos(a2),cy+r*Math.Sin(a2),cz}};
             Tag t;U.Curve.CreateLine(ref ln,out t);
-        }
-        SketchDeact(sk);Refresh();return"ok";
+        }SketchDeact(sk);Refresh();return"ok";
     }
-
     static Tag CylBody(double diam,double h,double x,double y,double z,double dx,double dy,double dz){
         var bb=W.Features.CreateCylinderBuilder(null);
         try{bb.Diameter.RightHandSide=diam.ToString();bb.Height.RightHandSide=h.ToString();bb.Origin=new Point3d(x,y,z);bb.Direction=new Vector3d(dx,dy,dz);return FT(bb.CommitFeature());}finally{bb.Destroy();}
