@@ -49,6 +49,8 @@ public class C
             {"cone",cmd_cone},{"sketch_rect",cmd_sketch_rect},{"sketch_circle",cmd_sketch_circle},
             {"extrude",cmd_extrude},{"pocket",cmd_pocket},{"hole",cmd_hole},
             {"subtract",cmd_subtract},{"unite",cmd_unite},{"merge",cmd_unite},
+            {"blend",cmd_blend},{"chamfer",cmd_chamfer},{"revolve",cmd_revolve},
+            {"trim",cmd_trim},{"mirror",cmd_mirror},
             {"clear",cmd_clear},{"save",cmd_save},{"pause",cmd_pause},{"exec",cmd_exec},
         };
 
@@ -134,6 +136,42 @@ public class C
     }
     static void cmd_clear(string[] p){
         NewCanvas(); _wp = _s.Parts.Work; RefreshWcs(); Log("cleared");
+    }
+    static void cmd_blend(string[] p){
+        if(_lastBody==Tag.Null)return;
+        double r=G(p,1,5);
+        Tag[] es;_uf.Modl.AskBodyEdges(_lastBody,out es);
+        if(es.Length==0)return;
+        Tag t;_uf.Modl.CreateBlend(r.ToString(),es,es.Length,0,0,r,out t);
+        _prevBody=_lastBody;_lastBody=t;Log("blend r="+r);
+    }
+    static void cmd_chamfer(string[] p){
+        if(_lastBody==Tag.Null)return;
+        double d=G(p,1,2);
+        Tag[] es;_uf.Modl.AskBodyEdges(_lastBody,out es);
+        if(es.Length==0)return;
+        Tag t;_uf.Modl.CreateChamfer(1,d.ToString(),d.ToString(),"0",es,out t);
+        _prevBody=_lastBody;_lastBody=t;Log("chamfer d="+d);
+    }
+    static void cmd_revolve(string[] p){
+        double x=G(p,1,0),y=G(p,2,0),w=G(p,3,50),h=G(p,4,30),ang=G(p,5,360);
+        var ts=SketchRect(x,y,0,w,h);
+        Tag[] feats;_uf.Modl.CreateRevolved(ts,new[]{"0",ang.ToString()},new[]{x,0.0,0.0},new[]{0.0,1.0,0.0},FeatureSigns.Nullsign,out feats);
+        if(feats!=null&&feats.Length>0){Tag bt;_uf.Modl.AskFeatBody(feats[0],out bt);SetBody(bt);}Log("revolve");
+    }
+    static void cmd_trim(string[] p){
+        if(_lastBody==Tag.Null)return;
+        double nx=G(p,1,0),ny=G(p,2,0),nz=G(p,3,1),ox=G(p,4,0),oy=G(p,5,0),oz=G(p,6,0);
+        Tag plane;_uf.Modl.CreatePlane(new double[]{ox,oy,oz},new double[]{nx,ny,nz},out plane);
+        Tag t;_uf.Modl.TrimBody(_lastBody,plane,0,out t);
+        _prevBody=_lastBody;_lastBody=t;Log("trim");
+    }
+    static void cmd_mirror(string[] p){
+        if(_lastBody==Tag.Null)return;
+        double nx=G(p,1,0),ny=G(p,2,1),nz=G(p,3,0),ox=G(p,4,0),oy=G(p,5,0),oz=G(p,6,0);
+        Tag plane;_uf.Modl.CreatePlane(new double[]{ox,oy,oz},new double[]{nx,ny,nz},out plane);
+        Tag t;_uf.Modl.CreateMirrorBody(_lastBody,plane,out t);
+        _prevBody=_lastBody;_lastBody=t;Log("mirror");
     }
     static void cmd_exec(string[] p){
         try{
