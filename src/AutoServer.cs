@@ -86,6 +86,8 @@ public class NxHook : NativeWindow
             case"block":r=CmdBlk(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",100),J(j,"h",50),J(j,"d",30));break;
             case"extrude":r=CmdExt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",50),J(j,"d",20),(int)J(j,"sign",0));break;
             case"exsketch":r=ExSketch(J(j,"d",20),(int)J(j,"sign",0));break;
+            case"revsketch":r=RevSketch(J(j,"a",360));break;
+            case"pocksketch":r=PokSketch(J(j,"d",20));break;
             case"pocket":r=CmdPkt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"r",15),J(j,"d",20));break;
             case"sphere":r=CmdSph(J(j,"d",50),J(j,"x",0),J(j,"y",0),J(j,"z",50));break;
             case"cylinder":r=CmdCyl(J(j,"d",50),J(j,"h",100),J(j,"x",0),J(j,"y",0),J(j,"z",0));break;
@@ -184,6 +186,15 @@ public class NxHook : NativeWindow
         if(_skCurves==null||_skCurves.Length==0)return"no sketch curves";
         var sg=sign==1?FeatureSigns.Positive:sign==2?FeatureSigns.Negative:FeatureSigns.Nullsign;
         Track(ExtrudeCrv(_skCurves,d,0,0,0,0,0,1,sg));Refresh();return"ok";
+    }
+    static string RevSketch(double ang){
+        if(_skCurves==null||_skCurves.Length==0)return"no sketch curves";
+        Tag[] feats;U.Modl.CreateRevolved(_skCurves,new[]{"0",ang.ToString()},new[]{0.0,0.0,0.0},new[]{0.0,1.0,0.0},FeatureSigns.Nullsign,out feats);
+        if(feats!=null&&feats.Length>0){Tag bt;U.Modl.AskFeatBody(feats[0],out bt);Track(bt);}Refresh();return"ok";
+    }
+    static string PokSketch(double d){
+        if(_skCurves==null||_skCurves.Length==0)return"no sketch curves";
+        ExtrudeCrv(_skCurves,d,0,0,0,0,0,1,FeatureSigns.Negative);Refresh();return"ok";
     }
 
     static string CmdExt(double x,double y,double z,double w,double h,double d,int sign){
