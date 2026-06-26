@@ -85,6 +85,7 @@ public class NxHook : NativeWindow
             case"clear":NewCanvas();EnsPart();r="ok";break;
             case"block":r=CmdBlk(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",100),J(j,"h",50),J(j,"d",30));break;
             case"extrude":r=CmdExt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",50),J(j,"d",20),(int)J(j,"sign",0));break;
+            case"exsketch":r=ExSketch(J(j,"d",20),(int)J(j,"sign",0));break;
             case"pocket":r=CmdPkt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"r",15),J(j,"d",20));break;
             case"sphere":r=CmdSph(J(j,"d",50),J(j,"x",0),J(j,"y",0),J(j,"z",50));break;
             case"cylinder":r=CmdCyl(J(j,"d",50),J(j,"h",100),J(j,"x",0),J(j,"y",0),J(j,"z",0));break;
@@ -179,6 +180,12 @@ public class NxHook : NativeWindow
         try{b.CenterPoint=W.Points.CreatePoint(new Point3d(x,y,z));b.Diameter.RightHandSide=diam.ToString();Track(FT(b.CommitFeature()));}finally{b.Destroy();}
         Refresh();return"ok";
     }
+    static string ExSketch(double d,int sign){
+        if(_skCurves==null||_skCurves.Length==0)return"no sketch curves";
+        var sg=sign==1?FeatureSigns.Positive:sign==2?FeatureSigns.Negative:FeatureSigns.Nullsign;
+        Track(ExtrudeCrv(_skCurves,d,0,0,0,0,0,1,sg));Refresh();return"ok";
+    }
+
     static string CmdExt(double x,double y,double z,double w,double h,double d,int sign){
         U.Ui.DisplayMessage("extrude: "+w+"x"+h+"x"+d,1);
         var ts=SketchRect(x,y,z,w,h);
@@ -236,6 +243,7 @@ public class NxHook : NativeWindow
 
     // ══ 草图（开放模式，不自动关闭） ══
     static Sketch _skOpen;static DisplayableObject _skGeom,_skPrevG;
+    static Tag[] _skCurves; // 关草图后保存的曲线 tags
     static void SkEnsure(){
         if(_skOpen!=null)return;
         var sb=W.Sketches.CreateSketchInPlaceBuilder2(null);
@@ -244,6 +252,9 @@ public class NxHook : NativeWindow
     }
     static void SkDeact(){
         if(_skOpen==null)return;
+        // 存下草图中所有几何的 tag
+        var geoms=_skOpen.GetAllGeometry();
+        if(geoms!=null&&geoms.Length>0){_skCurves=new Tag[geoms.Length];for(int i=0;i<geoms.Length;i++)_skCurves[i]=geoms[i].Tag;}
         _skOpen.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);
         _skOpen=null;_skGeom=null;_skPrevG=null;Refresh();
     }
