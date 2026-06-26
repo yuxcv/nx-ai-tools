@@ -105,8 +105,14 @@ public class NxHook : NativeWindow
             case"skcircle":r=SkCir(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",20));break;
             case"skpoly":r=SkPoly(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",25),(int)J(j,"n",6));break;
             case"skpoint":r=SkPoint(J(j,"x",0),J(j,"y",0),J(j,"z",0));break;
-            case"skcorner":SkCorner();r="corner";break;
+            case"skellipse":r=SkEllipse(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"rx",30),J(j,"ry",15));break;
+            case"skcorner":r=SkCorner();break;
+            case"skchamf":r=SkChamf();break;
             case"sktrim":r=SkTrim();break;
+            case"skautocon":r=SkAutoCon();break;
+            case"sksym":r=SkSym();break;
+            case"skdim":r=SkDim();break;
+            case"skoffs":r=SkOffs();break;
             case"skhoriz":r=SkCon("Ho");break;
             case"skvert":r=SkCon("Ve");break;
             case"skfix":r=SkCon("Fi");break;
@@ -266,12 +272,39 @@ public class NxHook : NativeWindow
     static string SkPoint(double x,double y,double z){
         SkEnsure();SkAdd(W.Points.CreatePoint(new Point3d(x,y,z)));Refresh();return"ok";
     }
-    static void SkCorner(){
+    static string SkEllipse(double cx,double cy,double cz,double rx,double ry){
+        SkEnsure();var eb=W.Sketches.CreateSketchEllipseBuilder(null);
+        try{eb.CenterPoint=W.Points.CreatePoint(new Point3d(cx,cy,cz));
+            eb.MajorRadius.RightHandSide=rx.ToString();eb.MinorRadius.RightHandSide=ry.ToString();
+            SkAdd((DisplayableObject)eb.Commit());}finally{eb.Destroy();}
+        Refresh();return"ok";
+    }
+    static string SkCorner(){
         SkEnsure();var cb=W.Sketches.CreateCornerBuilder();
-        try{cb.Commit();}finally{cb.Destroy();}Refresh();
+        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
+    }
+    static string SkChamf(){
+        SkEnsure();var cb=W.Sketches.CreateSketchChamferBuilder();
+        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
     }
     static string SkTrim(){
         SkEnsure();var cb=W.Sketches.CreateQuickTrimBuilder();
+        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
+    }
+    static string SkAutoCon(){
+        SkEnsure();var cb=W.Sketches.CreateAutoConstrainBuilder();
+        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
+    }
+    static string SkSym(){
+        SkEnsure();var cb=W.Sketches.CreateMakeSymmetricBuilder();
+        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
+    }
+    static string SkDim(){
+        SkEnsure();var cb=W.Sketches.CreateRapidDimensionBuilder();
+        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
+    }
+    static string SkOffs(){
+        SkEnsure();var cb=W.Sketches.CreateSketchOffsetBuilder(null);
         try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
     }
 
