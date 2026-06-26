@@ -244,24 +244,27 @@ public class NxHook : NativeWindow
         _skOpen=null;_skGeom=null;_skPrevG=null;Refresh();
     }
     static void SkAdd(DisplayableObject g){_skPrevG=_skGeom;_skGeom=g;_skOpen.AddGeometry(g,Sketch.InferConstraintsOption.InferNoConstraints);}
+    // 任意 Builder 模式：SkEnsure → Create → Commit/Destroy → Refresh
+    static string SkUse<T>(Func<T> f)where T:class{SkEnsure();var b=f();try{((dynamic)b).Commit();}finally{((dynamic)b).Destroy();}Refresh();return"ok";}
 
     // 草图绘制
     static string SkLine(double x1,double y1,double z1,double x2,double y2,double z2){
         SkEnsure();SkAdd(W.Curves.CreateLine(new Point3d(x1,y1,z1),new Point3d(x2,y2,z2)));Refresh();return"ok";
     }
     static string SkArc(double cx,double cy,double cz,double r,double a1,double a2){
-        SkEnsure();var a=new UFCurve.Arc(){arc_center=new double[]{cx,cy,cz},radius=r,
-            start_angle=a1*Math.PI/180,end_angle=a2*Math.PI/180,matrix_tag=_mtx};
+        return SkArcCir(cx,cy,cz,r,a1*Math.PI/180,a2*Math.PI/180);
+    }
+    static string SkCir(double cx,double cy,double cz,double r){
+        return SkArcCir(cx,cy,cz,r,0,2*Math.PI);
+    }
+    static string SkArcCir(double cx,double cy,double cz,double r,double a1,double a2){
+        SkEnsure();var a=new UFCurve.Arc(){arc_center=new double[]{cx,cy,cz},radius=r,start_angle=a1,end_angle=a2,matrix_tag=_mtx};
         Tag t;U.Curve.CreateArc(ref a,out t);SkAdd((DisplayableObject)NXOpen.Utilities.NXObjectManager.Get(t));Refresh();return"ok";
     }
     static string SkRect(double x,double y,double z,double w,double h){
         SkEnsure();double[][]ps={new[]{x,y,z},new[]{x+w,y,z},new[]{x+w,y+h,z},new[]{x,y+h,z}};
         for(int i=0;i<4;i++)SkAdd(W.Curves.CreateLine(new Point3d(ps[i][0],ps[i][1],ps[i][2]),new Point3d(ps[(i+1)%4][0],ps[(i+1)%4][1],ps[(i+1)%4][2])));
         Refresh();return"ok";
-    }
-    static string SkCir(double cx,double cy,double cz,double r){
-        SkEnsure();var a=new UFCurve.Arc(){arc_center=new double[]{cx,cy,cz},radius=r,start_angle=0,end_angle=2*Math.PI,matrix_tag=_mtx};
-        Tag t;U.Curve.CreateArc(ref a,out t);SkAdd((DisplayableObject)NXOpen.Utilities.NXObjectManager.Get(t));Refresh();return"ok";
     }
     static string SkPoly(double cx,double cy,double cz,double r,int n){
         if(n<3)return"n>=3";SkEnsure();
@@ -279,34 +282,13 @@ public class NxHook : NativeWindow
             SkAdd((DisplayableObject)eb.Commit());}finally{eb.Destroy();}
         Refresh();return"ok";
     }
-    static string SkCorner(){
-        SkEnsure();var cb=W.Sketches.CreateCornerBuilder();
-        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
-    }
-    static string SkChamf(){
-        SkEnsure();var cb=W.Sketches.CreateSketchChamferBuilder();
-        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
-    }
-    static string SkTrim(){
-        SkEnsure();var cb=W.Sketches.CreateQuickTrimBuilder();
-        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
-    }
-    static string SkAutoCon(){
-        SkEnsure();var cb=W.Sketches.CreateAutoConstrainBuilder();
-        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
-    }
-    static string SkSym(){
-        SkEnsure();var cb=W.Sketches.CreateMakeSymmetricBuilder();
-        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
-    }
-    static string SkDim(){
-        SkEnsure();var cb=W.Sketches.CreateRapidDimensionBuilder();
-        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
-    }
-    static string SkOffs(){
-        SkEnsure();var cb=W.Sketches.CreateSketchOffsetBuilder(null);
-        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
-    }
+    static string SkCorner(){return SkUse(()=>W.Sketches.CreateCornerBuilder());}
+    static string SkChamf(){return SkUse(()=>W.Sketches.CreateSketchChamferBuilder());}
+    static string SkTrim(){return SkUse(()=>W.Sketches.CreateQuickTrimBuilder());}
+    static string SkAutoCon(){return SkUse(()=>W.Sketches.CreateAutoConstrainBuilder());}
+    static string SkSym(){return SkUse(()=>W.Sketches.CreateMakeSymmetricBuilder());}
+    static string SkDim(){return SkUse(()=>W.Sketches.CreateRapidDimensionBuilder());}
+    static string SkOffs(){return SkUse(()=>W.Sketches.CreateSketchOffsetBuilder(null));}
 
     // 草图约束（Builder 模式）
     static bool SkConNeed2(string t){return t=="Pa"||t=="Pe"||t=="Eq";}
