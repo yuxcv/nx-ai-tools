@@ -73,12 +73,12 @@ public class NxHook : NativeWindow
     // ══ WM_COPYDATA ══
     protected override void WndProc(ref Message m){
         if(m.Msg!=WM_COPYDATA){base.WndProc(ref m);return;}
-        string r="?";
+        string r="?",cmd="?";
         try{
             var c=(CDS)Marshal.PtrToStructure(m.LParam,typeof(CDS));
             var buf=new byte[c.cbData];Marshal.Copy(c.lpData,buf,0,c.cbData);
             var j=System.Text.Encoding.UTF8.GetString(buf);
-            var cmd=Ss(j,"cmd");Init();
+            cmd=Ss(j,"cmd");Init();
 
             switch(cmd){
             case"ping":r="pong";break;
@@ -127,9 +127,12 @@ public class NxHook : NativeWindow
             case"skperp":r=SkCon("Pe");break;
             case"skequal":r=SkCon("Eq");break;
             case"skdone":SkDeact();r="sketch done";break;
+            case"undo":r=CmdUndo();break;
             }
-        }catch(Exception ex){r="ERR:"+ex.Message;}
+        }catch(Exception ex){r="ERR:["+cmd+"] "+ex.Message;}
         try{File.WriteAllText(@"C:\temp\nx\rslt.json",Ok(r));}catch{}
+        // 命令日志
+        try{File.AppendAllText(@"C:\temp\nx\cmd_log.txt","["+DateTime.Now.ToString("HH:mm:ss")+"] "+cmd+" → "+(r.Length>100?r.Substring(0,100):r)+"\n");}catch{}
         base.WndProc(ref m);
     }
 
@@ -140,6 +143,12 @@ public class NxHook : NativeWindow
         Tag p;U.Modl.CreatePlane(new double[]{ox,oy,oz},new double[]{nx,ny,nz},out p);return p;
     }
     static void Refresh(){U.Disp.Refresh();}
+    static Session.UndoMarkId _umark;static bool _umarked;
+    static void Mark(){try{_umark=S.SetUndoMark(Session.MarkVisibility.Visible,"auto");_umarked=true;}catch{}}
+    static string CmdUndo(){
+        if(!_umarked)return"nothing to undo";
+        try{S.UndoToMark(_umark,"undo");_umarked=false;Refresh();return"ok";}catch(Exception ex){return"undo ERR:"+ex.Message;}
+    }
     static void SketchAct(out Sketch sk){
         var sb=W.Sketches.CreateSketchInPlaceBuilder2(null);
         try{sb.PlaneOption=NXOpen.Sketch.PlaneOption.Inferred;sk=(NXOpen.Sketch)sb.Commit();}finally{sb.Destroy();}
@@ -168,12 +177,12 @@ public class NxHook : NativeWindow
         PartLoadStatus st;S.Parts.OpenBaseDisplay(p,out st);W=S.Parts.Work;_last=Tag.Null;_prev=Tag.Null;_skCurves=null;
     }
     static string CmdBlk(double x,double y,double z,double w,double h,double d){
-        var b=W.Features.CreateBlockFeatureBuilder(null);
+        Mark();var b=W.Features.CreateBlockFeatureBuilder(null);
         try{b.SetOriginAndLengths(new Point3d(x,y,z),w.ToString(),h.ToString(),d.ToString());Track(FT(b.CommitFeature()));}finally{b.Destroy();}
         Refresh();return"ok";
     }
     static string CmdCyl(double diam,double h,double x,double y,double z){
-        var b=W.Features.CreateCylinderBuilder(null);
+        Mark();var b=W.Features.CreateCylinderBuilder(null);
         try{b.Diameter.RightHandSide=diam.ToString();b.Height.RightHandSide=h.ToString();b.Origin=new Point3d(x,y,z);b.Direction=new Vector3d(0,0,1);Track(FT(b.CommitFeature()));}finally{b.Destroy();}
         Refresh();return"ok";
     }
@@ -183,7 +192,7 @@ public class NxHook : NativeWindow
         Refresh();return"ok";
     }
     static string ExSketch(double d,int sign){
-        if(_skCurves==null||_skCurves.Length==0)return"no sketch curves";
+        Mark();if(_skCurves==null||_skCurves.Length==0)return"no sketch curves";
         var sg=sign==1?FeatureSigns.Positive:sign==2?FeatureSigns.Negative:FeatureSigns.Nullsign;
         Track(ExtrudeCrv(_skCurves,d,0,0,0,0,0,1,sg));Refresh();return"ok";
     }
@@ -198,7 +207,7 @@ public class NxHook : NativeWindow
     }
 
     static string CmdExt(double x,double y,double z,double w,double h,double d,int sign){
-        U.Ui.DisplayMessage("extrude: "+w+"x"+h+"x"+d,1);
+        Mark();U.Ui.DisplayMessage("extrude: "+w+"x"+h+"x"+d,1);
         var ts=SketchRect(x,y,z,w,h);
         var sg=sign==1?FeatureSigns.Positive:sign==2?FeatureSigns.Negative:FeatureSigns.Nullsign;
         Track(ExtrudeCrv(ts,d,x+w/2,y+h/2,z,0,0,1,sg));Refresh();return"ok";
@@ -228,11 +237,11 @@ public class NxHook : NativeWindow
         Tag t;U.Modl.CreateChamfer(1,d.ToString(),d.ToString(),"0",es,out t);Track(t);Refresh();return"ok";
     }
     static string CmdUnite(){
-        if(_last==Tag.Null||_prev==Tag.Null)return"need 2 bodies";
+        Mark();if(_last==Tag.Null||_prev==Tag.Null)return"need 2 bodies";
         U.Modl.UniteBodies(_last,_prev);_prev=Tag.Null;Refresh();return"ok";
     }
     static string CmdSub(){
-        if(_last==Tag.Null||_prev==Tag.Null)return"need 2 bodies";
+        Mark();if(_last==Tag.Null||_prev==Tag.Null)return"need 2 bodies";
         Tag e;U.Modl.SubtractBodiesWithRetainedOptions(_prev,_last,false,true,out e);
         _last=_prev;_prev=Tag.Null;Refresh();return"ok";
     }
