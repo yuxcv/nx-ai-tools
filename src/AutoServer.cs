@@ -104,6 +104,9 @@ public class NxHook : NativeWindow
             case"skrect":r=SkRect(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",30));break;
             case"skcircle":r=SkCir(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",20));break;
             case"skpoly":r=SkPoly(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",25),(int)J(j,"n",6));break;
+            case"skpoint":r=SkPoint(J(j,"x",0),J(j,"y",0),J(j,"z",0));break;
+            case"skcorner":SkCorner();r="corner";break;
+            case"sktrim":r=SkTrim();break;
             case"skhoriz":r=SkCon("Ho");break;
             case"skvert":r=SkCon("Ve");break;
             case"skfix":r=SkCon("Fi");break;
@@ -259,6 +262,17 @@ public class NxHook : NativeWindow
         for(int i=0;i<n;i++){double a1=2*Math.PI*i/n,a2=2*Math.PI*(i+1)/n;
             SkAdd(W.Curves.CreateLine(new Point3d(cx+r*Math.Cos(a1),cy+r*Math.Sin(a1),cz),new Point3d(cx+r*Math.Cos(a2),cy+r*Math.Sin(a2),cz)));
         }Refresh();return"ok";
+    }
+    static string SkPoint(double x,double y,double z){
+        SkEnsure();SkAdd(W.Points.CreatePoint(new Point3d(x,y,z)));Refresh();return"ok";
+    }
+    static void SkCorner(){
+        SkEnsure();var cb=W.Sketches.CreateCornerBuilder();
+        try{cb.Commit();}finally{cb.Destroy();}Refresh();
+    }
+    static string SkTrim(){
+        SkEnsure();var cb=W.Sketches.CreateQuickTrimBuilder();
+        try{cb.Commit();}finally{cb.Destroy();}Refresh();return"ok";
     }
 
     // 草图约束（Builder 模式）
