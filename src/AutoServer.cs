@@ -104,9 +104,12 @@ public class NxHook : NativeWindow
             case"skrect":r=SkRect(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",30));break;
             case"skcircle":r=SkCir(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",20));break;
             case"skpoly":r=SkPoly(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",25),(int)J(j,"n",6));break;
-            case"skhoriz":r=SkGeoCon("H");break;
-            case"skvert":r=SkGeoCon("V");break;
-            case"skfix":r=SkGeoCon("F");break;
+            case"skhoriz":r=SkCon1("H");break;
+            case"skvert":r=SkCon1("V");break;
+            case"skfix":r=SkCon1("F");break;
+            case"skpara":r=SkCon2("P");break;
+            case"skperp":r=SkCon2("T");break; // T = p_T_tangent? no, Perpendicular → use Sketch API
+            case"skequal":r=SkCon2("E");break;
             case"skdone":SkDeact();r="sketch done";break;
             }
         }catch(Exception ex){r="ERR:"+ex.Message;}
@@ -219,7 +222,7 @@ public class NxHook : NativeWindow
     }
 
     // ══ 草图（开放模式，不自动关闭） ══
-    static Sketch _skOpen;static DisplayableObject _skGeom;
+    static Sketch _skOpen;static DisplayableObject _skGeom,_skPrevG;
     static void SkEnsure(){
         if(_skOpen!=null)return;
         var sb=W.Sketches.CreateSketchInPlaceBuilder2(null);
@@ -229,9 +232,9 @@ public class NxHook : NativeWindow
     static void SkDeact(){
         if(_skOpen==null)return;
         _skOpen.Deactivate(NXOpen.Sketch.ViewReorient.False,NXOpen.Sketch.UpdateLevel.SketchOnly);
-        _skOpen=null;Refresh();
+        _skOpen=null;_skGeom=null;_skPrevG=null;Refresh();
     }
-    static void SkAdd(DisplayableObject g){_skOpen.AddGeometry(g,Sketch.InferConstraintsOption.InferNoConstraints);_skGeom=g;}
+    static void SkAdd(DisplayableObject g){_skPrevG=_skGeom;_skGeom=g;_skOpen.AddGeometry(g,Sketch.InferConstraintsOption.InferNoConstraints);}
 
     // 草图绘制
     static string SkLine(double x1,double y1,double z1,double x2,double y2,double z2){
@@ -260,12 +263,20 @@ public class NxHook : NativeWindow
     }
 
     // 草图约束（Builder 模式）
-    static string SkGeoCon(string t){
+    static string SkCon1(string t){
         if(_skOpen==null||_skGeom==null)return"no geom";
         var cb=W.Sketches.CreateConstraintBuilder();
         try{
             switch(t){case"H":cb.ConstraintType=SketchConstraintBuilder.Constraint.Horizontal;break;case"V":cb.ConstraintType=SketchConstraintBuilder.Constraint.Vertical;break;case"F":cb.ConstraintType=SketchConstraintBuilder.Constraint.Fixed;break;default:return"bad type";}
             cb.GeometryToConstrain.Add(_skGeom);cb.Commit();Refresh();return"ok";
+        }finally{cb.Destroy();}
+    }
+    static string SkCon2(string t){
+        if(_skOpen==null||_skGeom==null||_skPrevG==null)return"need 2 geoms";
+        var cb=W.Sketches.CreateConstraintBuilder();
+        try{
+            switch(t){case"P":cb.ConstraintType=SketchConstraintBuilder.Constraint.Parallel;break;case"T":cb.ConstraintType=SketchConstraintBuilder.Constraint.Perpendicular;break;case"E":cb.ConstraintType=SketchConstraintBuilder.Constraint.EqualLength;break;default:return"bad type";}
+            cb.GeometryToConstrain.Add(_skGeom);cb.GeometryToConstrain.Add(_skPrevG);cb.Commit();Refresh();return"ok";
         }finally{cb.Destroy();}
     }
 
