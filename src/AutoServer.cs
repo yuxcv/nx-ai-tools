@@ -113,6 +113,8 @@ public class NxHook : NativeWindow
             case"sksym":r=SkSym();break;
             case"skdim":r=SkDim();break;
             case"skoffs":r=SkOffs();break;
+            case"skproj":r=SkProj();break;
+            case"skisect":r=SkIsect();break;
             case"skhoriz":r=SkCon("Ho");break;
             case"skvert":r=SkCon("Ve");break;
             case"skfix":r=SkCon("Fi");break;
@@ -289,6 +291,8 @@ public class NxHook : NativeWindow
     static string SkSym(){return SkUse(()=>W.Sketches.CreateMakeSymmetricBuilder());}
     static string SkDim(){return SkUse(()=>W.Sketches.CreateRapidDimensionBuilder());}
     static string SkOffs(){return SkUse(()=>W.Sketches.CreateSketchOffsetBuilder(null));}
+    static string SkProj(){return SkUse(()=>W.Sketches.CreateProjectBuilder(null));}
+    static string SkIsect(){return SkUse(()=>W.Sketches.CreateIntersectionCurveBuilder(null));}
 
     // 草图约束（Builder 模式）
     static bool SkConNeed2(string t){return t=="Pa"||t=="Pe"||t=="Eq";}
