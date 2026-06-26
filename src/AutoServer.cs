@@ -115,7 +115,7 @@ public class NxHook : NativeWindow
             case"skoffs":r=SkOffs();break;
             case"skproj":r=SkProj();break;
             case"skisect":r=SkIsect();break;
-            case"skspline":r=SkUse(()=>W.Sketches.CreateSketchSplineBuilder(null));break;
+            case"skspline":r=SkUse(()=>W.Features.CreateSketchSplineBuilder(null));break;
             case"skconic":r=SkUse(()=>W.Sketches.CreateSketchConicBuilder(null));break;
             case"skhoriz":r=SkCon("Ho");break;
             case"skvert":r=SkCon("Ve");break;
