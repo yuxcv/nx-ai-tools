@@ -104,12 +104,12 @@ public class NxHook : NativeWindow
             case"skrect":r=SkRect(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",30));break;
             case"skcircle":r=SkCir(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",20));break;
             case"skpoly":r=SkPoly(J(j,"cx",0),J(j,"cy",0),J(j,"cz",0),J(j,"r",25),(int)J(j,"n",6));break;
-            case"skhoriz":r=SkCon1("H");break;
-            case"skvert":r=SkCon1("V");break;
-            case"skfix":r=SkCon1("F");break;
-            case"skpara":r=SkCon2("P");break;
-            case"skperp":r=SkCon2("T");break; // T = p_T_tangent? no, Perpendicular → use Sketch API
-            case"skequal":r=SkCon2("E");break;
+            case"skhoriz":r=SkCon("Ho");break;
+            case"skvert":r=SkCon("Ve");break;
+            case"skfix":r=SkCon("Fi");break;
+            case"skpara":r=SkCon("Pa");break;
+            case"skperp":r=SkCon("Pe");break;
+            case"skequal":r=SkCon("Eq");break;
             case"skdone":SkDeact();r="sketch done";break;
             }
         }catch(Exception ex){r="ERR:"+ex.Message;}
@@ -246,37 +246,30 @@ public class NxHook : NativeWindow
         Tag t;U.Curve.CreateArc(ref a,out t);SkAdd((DisplayableObject)NXOpen.Utilities.NXObjectManager.Get(t));Refresh();return"ok";
     }
     static string SkRect(double x,double y,double z,double w,double h){
-        SkEnsure();double[][]ps={new[]{x,y,z},new[]{x+w,y,z},new[]{x+w,y+h,z},new[]{x,y+h,z}};Line last=null;
-        for(int i=0;i<4;i++){last=W.Curves.CreateLine(new Point3d(ps[i][0],ps[i][1],ps[i][2]),new Point3d(ps[(i+1)%4][0],ps[(i+1)%4][1],ps[(i+1)%4][2]));_skOpen.AddGeometry(last,Sketch.InferConstraintsOption.InferNoConstraints);}
-        _skGeom=last;Refresh();return"ok";
+        SkEnsure();double[][]ps={new[]{x,y,z},new[]{x+w,y,z},new[]{x+w,y+h,z},new[]{x,y+h,z}};
+        for(int i=0;i<4;i++)SkAdd(W.Curves.CreateLine(new Point3d(ps[i][0],ps[i][1],ps[i][2]),new Point3d(ps[(i+1)%4][0],ps[(i+1)%4][1],ps[(i+1)%4][2])));
+        Refresh();return"ok";
     }
     static string SkCir(double cx,double cy,double cz,double r){
         SkEnsure();var a=new UFCurve.Arc(){arc_center=new double[]{cx,cy,cz},radius=r,start_angle=0,end_angle=2*Math.PI,matrix_tag=_mtx};
         Tag t;U.Curve.CreateArc(ref a,out t);SkAdd((DisplayableObject)NXOpen.Utilities.NXObjectManager.Get(t));Refresh();return"ok";
     }
     static string SkPoly(double cx,double cy,double cz,double r,int n){
-        if(n<3)return"n>=3";SkEnsure();Line last=null;
+        if(n<3)return"n>=3";SkEnsure();
         for(int i=0;i<n;i++){double a1=2*Math.PI*i/n,a2=2*Math.PI*(i+1)/n;
-            last=W.Curves.CreateLine(new Point3d(cx+r*Math.Cos(a1),cy+r*Math.Sin(a1),cz),new Point3d(cx+r*Math.Cos(a2),cy+r*Math.Sin(a2),cz));
-            _skOpen.AddGeometry(last,Sketch.InferConstraintsOption.InferNoConstraints);
-        }_skGeom=last;Refresh();return"ok";
+            SkAdd(W.Curves.CreateLine(new Point3d(cx+r*Math.Cos(a1),cy+r*Math.Sin(a1),cz),new Point3d(cx+r*Math.Cos(a2),cy+r*Math.Sin(a2),cz)));
+        }Refresh();return"ok";
     }
 
     // 草图约束（Builder 模式）
-    static string SkCon1(string t){
+    static string SkCon(string t){
         if(_skOpen==null||_skGeom==null)return"no geom";
         var cb=W.Sketches.CreateConstraintBuilder();
         try{
-            switch(t){case"H":cb.ConstraintType=SketchConstraintBuilder.Constraint.Horizontal;break;case"V":cb.ConstraintType=SketchConstraintBuilder.Constraint.Vertical;break;case"F":cb.ConstraintType=SketchConstraintBuilder.Constraint.Fixed;break;default:return"bad type";}
-            cb.GeometryToConstrain.Add(_skGeom);cb.Commit();Refresh();return"ok";
-        }finally{cb.Destroy();}
-    }
-    static string SkCon2(string t){
-        if(_skOpen==null||_skGeom==null||_skPrevG==null)return"need 2 geoms";
-        var cb=W.Sketches.CreateConstraintBuilder();
-        try{
-            switch(t){case"P":cb.ConstraintType=SketchConstraintBuilder.Constraint.Parallel;break;case"T":cb.ConstraintType=SketchConstraintBuilder.Constraint.Perpendicular;break;case"E":cb.ConstraintType=SketchConstraintBuilder.Constraint.EqualLength;break;default:return"bad type";}
-            cb.GeometryToConstrain.Add(_skGeom);cb.GeometryToConstrain.Add(_skPrevG);cb.Commit();Refresh();return"ok";
+            switch(t){case"Ho":cb.ConstraintType=SketchConstraintBuilder.Constraint.Horizontal;break;case"Ve":cb.ConstraintType=SketchConstraintBuilder.Constraint.Vertical;break;case"Fi":cb.ConstraintType=SketchConstraintBuilder.Constraint.Fixed;break;case"Pa":cb.ConstraintType=SketchConstraintBuilder.Constraint.Parallel;break;case"Pe":cb.ConstraintType=SketchConstraintBuilder.Constraint.Perpendicular;break;case"Eq":cb.ConstraintType=SketchConstraintBuilder.Constraint.EqualLength;break;default:return"bad type";}
+            cb.GeometryToConstrain.Add(_skGeom);
+            if(t=="Pa"||t=="Pe"||t=="Eq"){if(_skPrevG==null)return"need 2nd geom";cb.GeometryToConstrain.Add(_skPrevG);}
+            cb.Commit();Refresh();return"ok";
         }finally{cb.Destroy();}
     }
 
