@@ -262,13 +262,15 @@ public class NxHook : NativeWindow
     }
 
     // 草图约束（Builder 模式）
+    static bool SkConNeed2(string t){return t=="Pa"||t=="Pe"||t=="Eq";}
     static string SkCon(string t){
         if(_skOpen==null||_skGeom==null)return"no geom";
+        if(SkConNeed2(t)&&_skPrevG==null)return"need 2nd geom";
         var cb=W.Sketches.CreateConstraintBuilder();
         try{
             switch(t){case"Ho":cb.ConstraintType=SketchConstraintBuilder.Constraint.Horizontal;break;case"Ve":cb.ConstraintType=SketchConstraintBuilder.Constraint.Vertical;break;case"Fi":cb.ConstraintType=SketchConstraintBuilder.Constraint.Fixed;break;case"Pa":cb.ConstraintType=SketchConstraintBuilder.Constraint.Parallel;break;case"Pe":cb.ConstraintType=SketchConstraintBuilder.Constraint.Perpendicular;break;case"Eq":cb.ConstraintType=SketchConstraintBuilder.Constraint.EqualLength;break;default:return"bad type";}
             cb.GeometryToConstrain.Add(_skGeom);
-            if(t=="Pa"||t=="Pe"||t=="Eq"){if(_skPrevG==null)return"need 2nd geom";cb.GeometryToConstrain.Add(_skPrevG);}
+            if(SkConNeed2(t))cb.GeometryToConstrain.Add(_skPrevG);
             cb.Commit();Refresh();return"ok";
         }finally{cb.Destroy();}
     }
