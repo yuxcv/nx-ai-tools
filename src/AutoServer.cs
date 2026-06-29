@@ -128,6 +128,10 @@ public class NxHook : NativeWindow
             case"skequal":r=SkCon("Eq");break;
             case"skdone":SkDeact();r="sketch done";break;
             case"undo":r=CmdUndo();break;
+            case"shell":r=CmdShell(J(j,"t",2));break;
+            case"draft":r=CmdDraft(J(j,"a",5));break;
+            case"scale":r=CmdScale(J(j,"s",2));break;
+            case"probe":r=ProbeModl();break;
             }
         }catch(Exception ex){r="ERR:["+cmd+"] "+ex.Message;}
         try{File.WriteAllText(@"C:\temp\nx\rslt.json",Ok(r));}catch{}
@@ -339,6 +343,35 @@ public class NxHook : NativeWindow
             if(SkConNeed2(t))cb.GeometryToConstrain.Add(_skPrevG);
             cb.Commit();Refresh();return"ok";
         }finally{cb.Destroy();}
+    }
+
+    static string CmdShell(double t){
+        if(_last==Tag.Null)return"no body";
+        Tag r;U.Modl.CreateHollow(t.ToString(),new Tag[0],out r);
+        Track(r);Refresh();return"ok";
+    }
+    static string CmdDraft(double ang){
+        if(_last==Tag.Null)return"no body";
+        Tag[] fs;U.Modl.AskBodyFaces(_last,out fs);
+        if(fs.Length==0)return"no faces";
+        Tag r;U.Modl.CreateTaperFromFaces(_last,new Tag(),ang.ToString(),true,fs.Length,fs,out r);
+        Track(r);Refresh();return"ok";
+    }
+    static string CmdScale(double s){
+        if(_last==Tag.Null)return"no body";
+        Tag r;U.Modl.CreateUniformScale(_last,0,s.ToString(),out r);
+        Track(r);Refresh();return"ok";
+    }
+    static string ProbeModl(){
+        var sb=new System.Text.StringBuilder();
+        foreach(var m in U.Modl.GetType().GetMethods(System.Reflection.BindingFlags.Public|System.Reflection.BindingFlags.Instance)){
+            var n=m.Name.ToLower();
+            if(n.Contains("shell")||n.Contains("draft")||n.Contains("scale")||n.Contains("split")||n.Contains("hollow")||n.Contains("taper")){
+                var ps=m.GetParameters();if(ps.Length>8)continue;
+                sb.AppendLine(m.Name+"("+string.Join(",",System.Array.ConvertAll(ps,x=>x.ParameterType.Name))+"):"+m.ReturnType.Name);
+            }
+        }
+        File.WriteAllText(@"C:\temp\nx\probe_m.txt",sb.ToString());return"probed";
     }
 
     static Tag CylBody(double diam,double h,double x,double y,double z,double dx,double dy,double dz){
