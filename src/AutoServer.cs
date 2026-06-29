@@ -131,7 +131,6 @@ public class NxHook : NativeWindow
             case"shell":r=CmdShell(J(j,"t",2));break;
             case"draft":r=CmdDraft(J(j,"a",5));break;
             case"scale":r=CmdScale(J(j,"s",2));break;
-            case"probe":r=ProbeModl();break;
             }
         }catch(Exception ex){r="ERR:["+cmd+"] "+ex.Message;}
         try{File.WriteAllText(@"C:\temp\nx\rslt.json",Ok(r));}catch{}
@@ -351,10 +350,11 @@ public class NxHook : NativeWindow
         Track(r);Refresh();return"ok";
     }
     static string CmdDraft(double ang){
+        // 需要 DraftBuilder 属性探针
         if(_last==Tag.Null)return"no body";
+        Tag r;var ax=W.Axes.CreateAxis(new Point3d(0,0,0),new Vector3d(0,0,1),SmartObject.UpdateOption.WithinModeling);
         Tag[] fs;U.Modl.AskBodyFaces(_last,out fs);
-        if(fs.Length==0)return"no faces";
-        Tag r;U.Modl.CreateTaperFromFaces(_last,new Tag(),ang.ToString(),true,fs.Length,fs,out r);
+        U.Modl.CreateTaperFromFaces(_last,ax.Tag,ang.ToString(),true,fs.Length,fs,out r);
         Track(r);Refresh();return"ok";
     }
     static string CmdScale(double s){
@@ -362,18 +362,6 @@ public class NxHook : NativeWindow
         Tag r;U.Modl.CreateUniformScale(_last,0,s.ToString(),out r);
         Track(r);Refresh();return"ok";
     }
-    static string ProbeModl(){
-        var sb=new System.Text.StringBuilder();
-        foreach(var m in U.Modl.GetType().GetMethods(System.Reflection.BindingFlags.Public|System.Reflection.BindingFlags.Instance)){
-            var n=m.Name.ToLower();
-            if(n.Contains("shell")||n.Contains("draft")||n.Contains("scale")||n.Contains("split")||n.Contains("hollow")||n.Contains("taper")){
-                var ps=m.GetParameters();if(ps.Length>8)continue;
-                sb.AppendLine(m.Name+"("+string.Join(",",System.Array.ConvertAll(ps,x=>x.ParameterType.Name))+"):"+m.ReturnType.Name);
-            }
-        }
-        File.WriteAllText(@"C:\temp\nx\probe_m.txt",sb.ToString());return"probed";
-    }
-
     static Tag CylBody(double diam,double h,double x,double y,double z,double dx,double dy,double dz){
         var bb=W.Features.CreateCylinderBuilder(null);
         try{bb.Diameter.RightHandSide=diam.ToString();bb.Height.RightHandSide=h.ToString();bb.Origin=new Point3d(x,y,z);bb.Direction=new Vector3d(dx,dy,dz);return FT(bb.CommitFeature());}finally{bb.Destroy();}
