@@ -356,7 +356,6 @@ public class NxHook : NativeWindow
     static string ExDraft(double d,double ang,int sign){
         return"exdraft WIP: Section+Rule plumbing incomplete";
     }
-    }
     static string CmdScale(double s){
         if(_last==Tag.Null)return"no body";
         Tag r;U.Modl.CreateUniformScale(_last,0,s.ToString(),out r);
