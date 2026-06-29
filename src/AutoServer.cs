@@ -350,12 +350,8 @@ public class NxHook : NativeWindow
         Track(r);Refresh();return"ok";
     }
     static string CmdDraft(double ang){
-        // 需要 DraftBuilder 属性探针
-        if(_last==Tag.Null)return"no body";
-        Tag r;var ax=W.Axes.CreateAxis(new Point3d(0,0,0),new Vector3d(0,0,1),SmartObject.UpdateOption.WithinModeling);
-        Tag[] fs;U.Modl.AskBodyFaces(_last,out fs);
-        U.Modl.CreateTaperFromFaces(_last,ax.Tag,ang.ToString(),true,fs.Length,fs,out r);
-        Track(r);Refresh();return"ok";
+        return"draft WIP: UF_API face/edge type mismatch on NX12";
+    }
     }
     static string CmdScale(double s){
         if(_last==Tag.Null)return"no body";
