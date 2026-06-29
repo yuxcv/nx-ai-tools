@@ -86,6 +86,7 @@ public class NxHook : NativeWindow
             case"block":r=CmdBlk(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",100),J(j,"h",50),J(j,"d",30));break;
             case"extrude":r=CmdExt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",50),J(j,"d",20),(int)J(j,"sign",0));break;
             case"exsketch":r=ExSketch(J(j,"d",20),(int)J(j,"sign",0));break;
+            case"exdraft":r="exdraft WIP: needs Section+RuleFactory plumbing";break;
             case"revsketch":r=RevSketch(J(j,"a",360));break;
             case"pocksketch":r=PokSketch(J(j,"d",20));break;
             case"pocket":r=CmdPkt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"r",15),J(j,"d",20));break;
