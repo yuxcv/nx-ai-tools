@@ -86,7 +86,7 @@ public class NxHook : NativeWindow
             case"block":r=CmdBlk(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",100),J(j,"h",50),J(j,"d",30));break;
             case"extrude":r=CmdExt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"w",50),J(j,"h",50),J(j,"d",20),(int)J(j,"sign",0));break;
             case"exsketch":r=ExSketch(J(j,"d",20),(int)J(j,"sign",0));break;
-            case"exdraft":r="exdraft WIP: needs Section+RuleFactory plumbing";break;
+            case"exdraft":r=ExDraft(J(j,"d",20),J(j,"a",10),(int)J(j,"sign",0));break;
             case"revsketch":r=RevSketch(J(j,"a",360));break;
             case"pocksketch":r=PokSketch(J(j,"d",20));break;
             case"pocket":r=CmdPkt(J(j,"x",0),J(j,"y",0),J(j,"z",0),J(j,"r",15),J(j,"d",20));break;
@@ -351,7 +351,11 @@ public class NxHook : NativeWindow
         Track(r);Refresh();return"ok";
     }
     static string CmdDraft(double ang){
-        return"draft WIP: UF_API face/edge type mismatch on NX12";
+        return"draft WIP: use ExtrudeBuilder.DraftAngle, needs Section+Rule plumbing";
+    }
+    static string ExDraft(double d,double ang,int sign){
+        return"exdraft WIP: Section+Rule plumbing incomplete";
+    }
     }
     static string CmdScale(double s){
         if(_last==Tag.Null)return"no body";
