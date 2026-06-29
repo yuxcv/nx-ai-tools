@@ -352,7 +352,6 @@ public class NxHook : NativeWindow
     static string CmdDraft(double ang){
         return"draft WIP: UF_API face/edge type mismatch on NX12";
     }
-    }
     static string CmdScale(double s){
         if(_last==Tag.Null)return"no body";
         Tag r;U.Modl.CreateUniformScale(_last,0,s.ToString(),out r);
